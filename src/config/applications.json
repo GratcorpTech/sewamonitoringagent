@@ -1,0 +1,32 @@
+{
+  "applications": [
+    {
+      "applicationId": "app-001",
+      "name": "Adobe Photoshop",
+      "publisher": "Adobe Inc.",
+      "processNames": ["Photoshop.exe"],
+      "enabled": true
+    },
+    {
+      "applicationId": "app-002",
+      "name": "Microsoft Excel",
+      "publisher": "Microsoft",
+      "processNames": ["EXCEL.EXE"],
+      "enabled": true
+    },
+    {
+      "applicationId": "app-003",
+      "name": "Microsoft Word",
+      "publisher": "Microsoft",
+      "processNames": ["WINWORD.EXE"],
+      "enabled": true
+    },
+    {
+      "applicationId": "app-004",
+      "name": "Google Chrome",
+      "publisher": "Google",
+      "processNames": ["chrome.exe"],
+      "enabled": true
+    }
+  ]
+}

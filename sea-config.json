@@ -1,0 +1,7 @@
+{
+  "main": "build/app.cjs",
+  "output": "build/sewa-agent.blob",
+  "disableExperimentalSEAWarning": true,
+  "useSnapshot": false,
+  "useCodeCache": false
+}

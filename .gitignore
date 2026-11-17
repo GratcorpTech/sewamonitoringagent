@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+desktop/node_modules/
+
+# Generated builds
+build/
+dist/
+desktop/release/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local monitoring data
+data/*
+!data/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db

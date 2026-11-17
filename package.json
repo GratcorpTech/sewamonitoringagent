@@ -1,0 +1,30 @@
+{
+  "name": "sewa-monitoring-agent",
+  "version": "1.0.0",
+  "description": "SEWA Monitoring Agent",
+  "main": "src/index.js",
+  "bin": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "build:win": "pkg . --targets node24-win-x64 --output dist/sewa-monitoring-agent.exe --fallback-to-source && cp src/utils/singleInstance.ps1 dist/singleInstance.ps1 && cp src/monitor/idleDetection.ps1 dist/idleDetection.ps1 && cp src/windows/credential.ps1 dist/credential.ps1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "active-win": "^8.2.1",
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.25.0"
+  },
+  "pkg": {
+    "scripts": [
+      "src/**/*.js"
+    ],
+    "assets": [
+      "src/config/**/*"
+    ]
+  }
+}
