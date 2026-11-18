@@ -22,11 +22,22 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             desktop/package-lock.json
+      # better-sqlite3 can compile from source when a matching prebuilt binary
+      # is unavailable. node-gyp 9 requires distutils, which Python 3.12+
+      # removed from the standard library.
+      - uses: actions/setup-python@v5
+        id: python
+        with:
+          python-version: "3.11"
       - name: Install agent packages
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
         run: npm ci
       - name: Build Apple Silicon agent
         run: npm run build:mac:arm64
       - name: Install Intel native dependencies
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
         run: npm ci --os=darwin --cpu=x64
       - name: Build Intel agent
         run: npm run build:mac:x64
