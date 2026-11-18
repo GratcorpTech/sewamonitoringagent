@@ -1,16 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 
 import { APPLICATION_PROCESS_MAP } from "../config/applicationProcessMap.js";
 import { fetchApplicationRecords } from "../sync/apiService.js";
+import { getAgentDataDirectory } from "../platform/paths.js";
 
-const configDirectory = path.join(
-  process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
-  "SEWA",
-  "MonitoringAgent",
-  "config",
-);
+const configDirectory = path.join(getAgentDataDirectory(), "config");
 
 const configPath = path.join(configDirectory, "applications.json");
 

@@ -1,17 +1,12 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import { logInfo } from "../utils/logger.js";
+import { getAgentDataDirectory } from "../platform/paths.js";
 
 let db = null;
 
-const dataDirectory = path.join(
-  process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
-  "SEWA",
-  "MonitoringAgent",
-  "data",
-);
+const dataDirectory = path.join(getAgentDataDirectory(), "data");
 
 const databasePath = path.join(dataDirectory, "sewa-agent.db");
 

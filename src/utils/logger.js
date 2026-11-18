@@ -1,13 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+import { getAgentLogDirectory } from "../platform/paths.js";
 
-const logDirectory = path.join(
-  process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
-  "SEWA",
-  "MonitoringAgent",
-  "logs",
-);
+const logDirectory = getAgentLogDirectory();
 
 fs.mkdirSync(logDirectory, { recursive: true });
 

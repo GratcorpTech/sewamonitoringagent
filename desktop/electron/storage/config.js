@@ -7,11 +7,13 @@ import { fileURLToPath } from "node:url";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
-const baseDirectory = path.join(
-  process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
-  "SEWA",
-  "MonitoringAgent",
-);
+const baseDirectory = process.platform === "darwin"
+  ? path.join(os.homedir(), "Library", "Application Support", "SEWA", "MonitoringAgent")
+  : path.join(
+      process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
+      "SEWA",
+      "MonitoringAgent",
+    );
 
 const configDirectory = path.join(baseDirectory, "config");
 const settingsPath = path.join(configDirectory, "settings.json");
@@ -68,14 +70,17 @@ export function saveSettings(settings) {
   // Keep existing Electron encryption for backward compatibility.
   const encryptedPassword = safeStorage.encryptString(settings.password);
 
-  // Also encrypt using Windows DPAPI for independent agent startup.
-  const passwordDpapi = runCredentialOperation("encrypt", settings.password);
+  // The independent Windows agent uses DPAPI. On macOS Electron launches the
+  // agent with a password decrypted from Keychain via safeStorage.
+  const passwordDpapi = process.platform === "win32"
+    ? runCredentialOperation("encrypt", settings.password)
+    : null;
 
   const safeSettings = {
     instanceUrl: settings.instanceUrl,
     username: settings.username,
     passwordEncrypted: encryptedPassword.toString("base64"),
-    passwordDpapi,
+    ...(passwordDpapi ? { passwordDpapi } : {}),
     employeeId: settings.employeeId || null,
     deviceId: settings.deviceId || null,
   };
@@ -118,7 +123,7 @@ export function getAgentLaunchConfig() {
 
   let password;
 
-  if (settings.passwordDpapi) {
+  if (process.platform === "win32" && settings.passwordDpapi) {
     password = runCredentialOperation("decrypt", settings.passwordDpapi);
   } else if (settings.passwordEncrypted) {
     // Migrate credentials saved by the previous Electron version.
@@ -126,7 +131,9 @@ export function getAgentLaunchConfig() {
       Buffer.from(settings.passwordEncrypted, "base64"),
     );
 
-    settings.passwordDpapi = runCredentialOperation("encrypt", password);
+    if (process.platform === "win32") {
+      settings.passwordDpapi = runCredentialOperation("encrypt", password);
+    }
 
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf8");
   } else {

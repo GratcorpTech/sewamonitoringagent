@@ -1,18 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { getAgentDataDirectory } from "../platform/paths.js";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
-const settingsPath = path.join(
-  process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
-  "SEWA",
-  "MonitoringAgent",
-  "config",
-  "settings.json",
-);
+const settingsPath = path.join(getAgentDataDirectory(), "config", "settings.json");
 
 function getCredentialScriptPath() {
   if (process.pkg) {
@@ -71,7 +65,7 @@ export function getAgentSettings() {
   // Keep Electron-provided credentials as a backward-compatible override.
   const password = process.env.SEWA_AGENT_PASSWORD
     ? process.env.SEWA_AGENT_PASSWORD
-    : settings.passwordDpapi
+    : process.platform === "win32" && settings.passwordDpapi
       ? decryptPassword(settings.passwordDpapi)
       : null;
 

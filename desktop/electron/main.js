@@ -16,16 +16,28 @@ const __dirname = path.dirname(__filename);
 let agentProcess = null;
 
 function getAgentExecutablePath() {
+  const agentFileName = process.platform === "darwin"
+    ? "sewa-monitoring-agent"
+    : "sewa-monitoring-agent.exe";
+
   if (app.isPackaged) {
+    const macArchitectureDirectory = process.platform === "darwin"
+      ? path.join("macos", process.arch)
+      : "";
+
     return path.join(
       process.resourcesPath,
       "agent",
-      "sewa-monitoring-agent.exe",
+      macArchitectureDirectory,
+      agentFileName,
     );
   }
 
-  // Development: project-root/dist/sewa-monitoring-agent.exe
-  return path.resolve(__dirname, "../../dist/sewa-monitoring-agent.exe");
+  const macArchitectureDirectory = process.platform === "darwin"
+    ? path.join("macos", process.arch)
+    : "";
+
+  return path.resolve(__dirname, "../../dist", macArchitectureDirectory, agentFileName);
 }
 
 
@@ -47,7 +59,7 @@ function startMonitoringAgent() {
 
   const child = spawn(exePath, [], {
     cwd: path.dirname(exePath),
-    windowsHide: true,
+    ...(process.platform === "win32" ? { windowsHide: true } : {}),
     detached: true,
     stdio: "ignore",
     env: {
@@ -167,6 +179,22 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
+
+  if (process.platform === "darwin") {
+    app.setLoginItemSettings({ openAtLogin: true });
+
+    // The macOS agent receives its password from Electron's Keychain-backed
+    // safeStorage. Start it again when this app is opened at login.
+    try {
+      if (getSettings()) {
+        void startMonitoringAgent().catch((error) => {
+          console.error("[AGENT] Unable to start at login:", error.message);
+        });
+      }
+    } catch (error) {
+      console.error("[AGENT] Unable to start at login:", error.message);
+    }
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

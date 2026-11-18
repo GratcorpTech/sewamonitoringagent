@@ -6,7 +6,9 @@
   "bin": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "build:win": "pkg . --targets node24-win-x64 --output dist/sewa-monitoring-agent.exe --fallback-to-source && cp src/utils/singleInstance.ps1 dist/singleInstance.ps1 && cp src/monitor/idleDetection.ps1 dist/idleDetection.ps1 && cp src/windows/credential.ps1 dist/credential.ps1"
+    "build:win": "pkg . --targets node24-win-x64 --output dist/sewa-monitoring-agent.exe --fallback-to-source && cp src/utils/singleInstance.ps1 dist/singleInstance.ps1 && cp src/monitor/idleDetection.ps1 dist/idleDetection.ps1 && cp src/windows/credential.ps1 dist/credential.ps1",
+    "build:mac:arm64": "pkg . --targets node24-macos-arm64 --output dist/macos/arm64/sewa-monitoring-agent --fallback-to-source",
+    "build:mac:x64": "pkg . --targets node24-macos-x64 --output dist/macos/x64/sewa-monitoring-agent --fallback-to-source"
   },
   "keywords": [],
   "author": "",

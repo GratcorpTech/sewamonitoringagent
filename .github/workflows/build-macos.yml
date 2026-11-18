@@ -1,0 +1,81 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: build-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - name: Install agent packages
+        run: npm ci
+      - name: Build Apple Silicon agent
+        run: npm run build:mac:arm64
+      - name: Install Intel native dependencies
+        run: npm ci --os=darwin --cpu=x64
+      - name: Build Intel agent
+        run: npm run build:mac:x64
+      - name: Install desktop packages
+        working-directory: desktop
+        run: npm ci
+      - name: Import signing certificate
+        id: cert
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          if [ -z "$MACOS_CERT_P12" ]; then
+            echo "No signing certificate secret: the app will be unsigned."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(uuidgen)"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          signing_identity="${MACOS_SIGNING_IDENTITY:-SEWA Monitoring Agent Signing}"
+          security find-certificate -c "$signing_identity" -p "$keychain" > "$RUNNER_TEMP/cert.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+          echo "CSC_NAME=$signing_identity" >> "$GITHUB_ENV"
+          echo "has_identity=true" >> "$GITHUB_OUTPUT"
+      - name: Build universal DMG
+        working-directory: desktop
+        run: npm run dist:mac
+      - name: Verify universal application
+        env:
+          HAS_SIGNING_CERT: ${{ steps.cert.outputs.has_identity }}
+        run: |
+          app="desktop/release/mac-universal/SEWA Monitoring Agent.app"
+          lipo -info "$app/Contents/MacOS/SEWA Monitoring Agent"
+          file "$app/Contents/Resources/agent/macos/arm64/sewa-monitoring-agent"
+          file "$app/Contents/Resources/agent/macos/x64/sewa-monitoring-agent"
+          if [ "$HAS_SIGNING_CERT" = "true" ]; then
+            codesign --verify --deep --strict "$app"
+          fi
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEWA-Monitoring-Agent-macOS
+          path: desktop/release/*.dmg
+          if-no-files-found: error
+          retention-days: 30

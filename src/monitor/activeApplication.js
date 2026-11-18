@@ -9,11 +9,19 @@ export async function getActiveApplication() {
 
     // Windows did not provide reliable foreground information.
     // This is not necessarily an application switch.
-    if (!activeWindow || !activeWindow.owner?.path) {
+    if (
+      !activeWindow ||
+      !activeWindow.owner ||
+      (!activeWindow.owner.path && !activeWindow.owner.name)
+    ) {
       return null;
     }
 
-    const processName = path.basename(activeWindow.owner.path);
+    // macOS reports the bundle path (for example, Google Chrome.app), while
+    // Windows reports an executable path. Keep the existing Windows mapping.
+    const processName = process.platform === "darwin"
+      ? activeWindow.owner.name || path.basename(activeWindow.owner.path)
+      : path.basename(activeWindow.owner.path);
 
     const processId = activeWindow.owner.processId;
 

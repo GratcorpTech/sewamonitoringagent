@@ -11,9 +11,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron": "electron .",
-    "start": "concurrently \"vite --host 127.0.0.1 --port 5174 --strictPort\" \"wait-on http://127.0.0.1:5174 && npm run electron:local -- .\"",
-    "electron:local": "C:/Users/sonic/Downloads/electron-v40/electron.exe",
-    "dist": "npm run build && electron-builder --win nsis"
+    "start": "concurrently \"vite --host 127.0.0.1 --port 5174 --strictPort\" \"wait-on http://127.0.0.1:5174 && electron .\"",
+    "dist": "npm run build && electron-builder --win nsis",
+    "dist:mac": "npm run build && electron-builder --mac dmg --universal"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -54,7 +54,8 @@
           "credential.ps1",
           "idleDetection.ps1",
           "singleInstance.ps1",
-          "startAgent.ps1"
+          "startAgent.ps1",
+          "macos/**"
         ]
       }
     ],
@@ -63,6 +64,17 @@
         "nsis"
       ],
       "artifactName": "SEWA-Monitoring-Agent-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "artifactName": "SEWA-Monitoring-Agent-${version}-macOS-universal.${ext}"
     },
     "nsis": {
       "oneClick": false,
