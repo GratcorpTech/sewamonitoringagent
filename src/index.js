@@ -4,7 +4,7 @@ import { SessionTracker } from "./monitor/sessionTracker.js";
 import { getDeviceInfo } from "./device/deviceInfo.js";
 import { logInfo, logError } from "./utils/logger.js";
 import { sendUsageSession } from "./sync/apiService.js";
-
+import { initializeMonitoredApplications } from "./monitor/applicationMatcher.js";
 import { initDatabase, closeDatabase } from "./storage/database.js";
 
 import {
@@ -22,6 +22,23 @@ import {
   releaseSingleInstance,
 } from "./utils/singleInstance.js";
 
+const IDLE_THRESHOLD = 15000;
+const SYNC_INTERVAL = 10000;
+const CHECKPOINT_INTERVAL = 30000;
+const APPLICATION_REFRESH_INTERVAL = 2 * 60 * 1000;
+
+let isIdle = false;
+let isCheckingApplication = false;
+let isSyncing = false;
+let isShuttingDown = false;
+let isShutdownStarted = false;
+
+let syncInterval;
+let checkpointInterval;
+let monitoringInterval;
+let stopIdleMonitoring;
+let applicationRefreshInterval;
+
 async function startAgent() {
   // 1. Acquire mutex before initializing SQLite or monitoring.
   const acquired = await acquireSingleInstance();
@@ -33,10 +50,35 @@ async function startAgent() {
     process.exit(0);
   }
 
-    logInfo("Single-instance protection acquired.");
-initDatabase();
+  logInfo("Single-instance protection acquired.");
+  initDatabase();
 
+  // Load application configuration before starting monitoring.
+  const applicationCount = await initializeMonitoredApplications();
 
+  logInfo(
+    `Application configuration initialized: ${applicationCount} application(s).`,
+  );
+
+  let isRefreshingApplications = false;
+
+  applicationRefreshInterval = setInterval(async () => {
+    if (isRefreshingApplications || isShuttingDown) return;
+
+    isRefreshingApplications = true;
+
+    try {
+      logInfo("Refreshing application configuration from SEWA...");
+
+      const count = await initializeMonitoredApplications();
+
+      logInfo(`Application configuration refreshed: ${count} application(s).`);
+    } catch (error) {
+      logError("Application configuration refresh failed", error);
+    } finally {
+      isRefreshingApplications = false;
+    }
+  }, APPLICATION_REFRESH_INTERVAL);
 
   // 2. Initialize database only after acquiring mutex.
   // const { db } = await import("./storage/database.js");
@@ -52,10 +94,6 @@ initDatabase();
   //   clearActiveCheckpoint,
   // } = await import("./storage/sessionQueue.js");
 
-  const IDLE_THRESHOLD = 15000;
-  const SYNC_INTERVAL = 10000;
-  const CHECKPOINT_INTERVAL = 30000;
-
   // Device information
   const device = getDeviceInfo();
 
@@ -66,17 +104,6 @@ initDatabase();
 
   // Initialize session tracker
   const sessionTracker = new SessionTracker();
-
-  let isIdle = false;
-  let isCheckingApplication = false;
-  let isSyncing = false;
-  let isShuttingDown = false;
-  let isShutdownStarted = false;
-
-  let syncInterval;
-  let checkpointInterval;
-  let monitoringInterval;
-  let stopIdleMonitoring;
 
   // Synchronize pending sessions from SQLite
   async function syncPendingSessions() {
@@ -176,6 +203,7 @@ initDatabase();
     clearInterval(monitoringInterval);
     clearInterval(syncInterval);
     clearInterval(checkpointInterval);
+    clearInterval(applicationRefreshInterval);
 
     if (stopIdleMonitoring) {
       stopIdleMonitoring();
@@ -206,7 +234,7 @@ initDatabase();
       logError("Shutdown error", error);
     } finally {
       try {
-       closeDatabase();
+        closeDatabase();
       } catch (error) {
         logError("Database close failed", error);
       }

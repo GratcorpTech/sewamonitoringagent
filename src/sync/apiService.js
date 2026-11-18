@@ -47,51 +47,54 @@ export async function sendUsageSession(session, device) {
   }
 }
 
-// export async function sendUsageSession(session, device) {
-//   try {
-//     const settings = getAgentSettings();
 
-//     if (!settings.instanceUrl) {
-//       throw new Error("SEWA instance URL is not configured.");
-//     }
+export async function fetchApplicationRecords() {
+  const settings = getAgentSettings();
 
-//     const API_BASE_URL = settings.instanceUrl.replace(/\/+$/, "");
+  if (!settings.instanceUrl || !settings.username || !settings.password) {
+    throw new Error("SEWA configuration or credentials are missing.");
+  }
 
-//     const response = await fetch(`${API_BASE_URL}/monitoring`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         session,
-//         user: {
-//           ...device,
-//           username: settings.username,
-//         },
-//       }),
-//       signal: AbortSignal.timeout(API_TIMEOUT),
-//     });
+  const API_BASE_URL = settings.instanceUrl.replace(/\/+$/, "");
 
-//     const result = await response.json();
+  const credentials = Buffer.from(
+    `${settings.username}:${settings.password}`,
+  ).toString("base64");
 
-//     if (!response.ok) {
-//       throw new Error(
-//         result.message || `API failed with status ${response.status}`,
-//       );
-//     }
+  const queryParams = new URLSearchParams({
+    currentPage: "1",
+    limit: "1000",
+    filters: JSON.stringify([]),
+    pagination: "confirm",
+    skiplimitcheck: "true",
+    selectedFields: JSON.stringify(["id", "assetname"]),
+  });
 
-//     console.log("[SYNC SUCCESS]", result.message);
+  const response = await fetch(
+    `${API_BASE_URL}/get/table/assetsoftwarelicense?${queryParams}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(API_TIMEOUT),
+    },
+  );
 
-//     return result;
-//   } catch (error) {
-//     if (error.name === "TimeoutError") {
-//       console.error(
-//         "[SYNC TIMEOUT] Backend did not respond within 10 seconds.",
-//       );
-//     } else {
-//       console.error("[SYNC FAILED]", error.message);
-//     }
+  const result = await response.json();
 
-//     return null;
-//   }
-// }
+  if (!response.ok) {
+    throw new Error(
+      result?.error ||
+        result?.message ||
+        `Application fetch failed: ${response.status}`,
+    );
+  }
+
+  if (!Array.isArray(result?.data)) {
+    throw new Error("Invalid application records response from SEWA.");
+  }
+
+  return result.data;
+}
