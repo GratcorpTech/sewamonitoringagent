@@ -74,6 +74,7 @@
           ]
         }
       ],
+      "x64ArchFiles": "Contents/Resources/agent/macos/**",
       "artifactName": "SEWA-Monitoring-Agent-${version}-macOS-universal.${ext}"
     },
     "nsis": {
