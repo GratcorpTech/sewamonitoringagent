@@ -70,16 +70,18 @@ jobs:
         env:
           HAS_SIGNING_CERT: ${{ steps.cert.outputs.has_identity }}
         run: |
-          for pair in "mac:x64" "mac-arm64:arm64"; do
-            app="desktop/release/${pair%%:*}/SEWA Monitoring Agent.app"
-            arch="${pair##*:}"
+          find desktop/release -maxdepth 2 -name "*.app"
+          count=0
+          while IFS= read -r app; do
+            count=$((count + 1))
             lipo -info "$app/Contents/MacOS/SEWA Monitoring Agent"
             test -f "$app/Contents/Resources/agent/agent.cjs"
-            lipo -info "$app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/darwin-$arch.node"
+            ls "$app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds"
             if [ "$HAS_SIGNING_CERT" = "true" ]; then
               codesign --verify --deep --strict "$app"
             fi
-          done
+          done < <(find desktop/release -maxdepth 2 -name "*.app")
+          test "$count" -eq 2
       - name: Report DMG sizes
         run: ls -lh desktop/release/*.dmg
       - name: Upload installer
