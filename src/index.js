@@ -32,6 +32,7 @@ let isCheckingApplication = false;
 let isSyncing = false;
 let isShuttingDown = false;
 let isShutdownStarted = false;
+let lastObservedApplication = null;
 
 let syncInterval;
 let checkpointInterval;
@@ -303,6 +304,19 @@ async function startAgent() {
         sessionTracker.currentSession?.sessionId || null;
 
       const application = await getActiveApplication();
+
+      const observedApplication = application
+        ? `${application.status}:${application.processName}`
+        : "UNAVAILABLE";
+
+      if (observedApplication !== lastObservedApplication) {
+        logInfo("Foreground application observed", {
+          status: application?.status || "UNAVAILABLE",
+          processName: application?.processName || null,
+          applicationName: application?.applicationName || null,
+        });
+        lastObservedApplication = observedApplication;
+      }
 
       const completedSessions = sessionTracker.update(application, isIdle);
 

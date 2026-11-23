@@ -2,6 +2,10 @@ import activeWin from "active-win";
 import path from "path";
 
 import { matchApplication } from "./applicationMatcher.js";
+import { logError } from "../utils/logger.js";
+
+const ERROR_LOG_INTERVAL_MS = 60 * 1000;
+let lastForegroundErrorAt = 0;
 
 export async function getActiveApplication() {
   try {
@@ -45,7 +49,15 @@ export async function getActiveApplication() {
       detectedAt: new Date().toISOString(),
     };
   } catch (error) {
-    console.error("Foreground detection failed:", error.message);
+    const now = Date.now();
+
+    // Foreground detection runs every second. Keep the persistent error log
+    // useful without writing the same permission or native-helper error on
+    // every poll.
+    if (now - lastForegroundErrorAt >= ERROR_LOG_INTERVAL_MS) {
+      logError("Foreground detection failed", error);
+      lastForegroundErrorAt = now;
+    }
 
     return null;
   }
