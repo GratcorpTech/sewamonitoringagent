@@ -1,6 +1,6 @@
 # macOS build
 
-Run **Build macOS** from the GitHub Actions tab, or push a `v*` tag. The workflow creates two DMGs, one for Apple Silicon (`arm64`) and one for Intel (`x64`), each containing only its own architecture. The monitoring agent is a bundled JavaScript file that the app runs on its own Electron runtime, so there is no separate agent executable.
+Run **Build macOS** from the GitHub Actions tab, or push a `v*` tag. The workflow creates one DMG for Apple Silicon Macs (`arm64`). Intel Macs are not built; to add them, build with `--x64` as well. The monitoring agent is a bundled JavaScript file that the app runs on its own Electron runtime, so there is no separate agent executable.
 
 The app starts the agent automatically. Its data and configuration are stored in `~/Library/Application Support/SEWA/MonitoringAgent`; logs are in `~/Library/Logs/SEWA/MonitoringAgent`.
 
