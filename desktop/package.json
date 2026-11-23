@@ -13,7 +13,7 @@
     "electron": "electron .",
     "start": "concurrently \"vite --host 127.0.0.1 --port 5174 --strictPort\" \"wait-on http://127.0.0.1:5174 && electron .\"",
     "dist": "npm --prefix .. run build:agent && npm run build && electron-builder --win nsis",
-    "dist:mac": "npm --prefix .. run build:agent && npm run build && electron-builder --mac dmg"
+    "dist:mac": "npm --prefix .. run build:agent && npm run build && electron-builder --mac dmg --arm64 --x64"
   },
   "dependencies": {
     "active-win": "^8.2.1",
