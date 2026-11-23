@@ -15,29 +15,35 @@ const __dirname = path.dirname(__filename);
 
 let agentProcess = null;
 
-function getAgentExecutablePath() {
-  const agentFileName = process.platform === "darwin"
-    ? "sewa-monitoring-agent"
-    : "sewa-monitoring-agent.exe";
-
+// Packaged builds run the bundled agent on Electron's own Node runtime;
+// development runs the source with the system Node.
+function getAgentLaunch() {
   if (app.isPackaged) {
-    const macArchitectureDirectory = process.platform === "darwin"
-      ? path.join("macos", process.arch)
-      : "";
+    const agentDirectory = path.join(process.resourcesPath, "agent");
 
-    return path.join(
-      process.resourcesPath,
-      "agent",
-      macArchitectureDirectory,
-      agentFileName,
-    );
+    return {
+      command: process.execPath,
+      script: path.join(agentDirectory, "agent.cjs"),
+      cwd: agentDirectory,
+      env: {
+        ELECTRON_RUN_AS_NODE: "1",
+        SEWA_AGENT_SCRIPTS_DIR: agentDirectory,
+        NODE_PATH: [
+          path.join(process.resourcesPath, "app.asar", "node_modules"),
+          path.join(process.resourcesPath, "app.asar.unpacked", "node_modules"),
+        ].join(path.delimiter),
+      },
+    };
   }
 
-  const macArchitectureDirectory = process.platform === "darwin"
-    ? path.join("macos", process.arch)
-    : "";
+  const projectRoot = path.resolve(__dirname, "../..");
 
-  return path.resolve(__dirname, "../../dist", macArchitectureDirectory, agentFileName);
+  return {
+    command: "node",
+    script: path.join(projectRoot, "src", "index.js"),
+    cwd: projectRoot,
+    env: {},
+  };
 }
 
 
@@ -51,19 +57,20 @@ function startMonitoringAgent() {
   }
 
   const config = getAgentLaunchConfig();
-  const exePath = getAgentExecutablePath();
+  const launch = getAgentLaunch();
 
-  if (!fs.existsSync(exePath)) {
-    throw new Error(`Monitoring EXE not found: ${exePath}`);
+  if (!fs.existsSync(launch.script)) {
+    throw new Error(`Monitoring agent not found: ${launch.script}`);
   }
 
-  const child = spawn(exePath, [], {
-    cwd: path.dirname(exePath),
+  const child = spawn(launch.command, [launch.script], {
+    cwd: launch.cwd,
     ...(process.platform === "win32" ? { windowsHide: true } : {}),
     detached: true,
     stdio: "ignore",
     env: {
       ...process.env,
+      ...launch.env,
       SEWA_AGENT_PASSWORD: config.password,
     },
   });

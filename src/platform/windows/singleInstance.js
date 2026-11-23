@@ -8,8 +8,8 @@ let mutexProcess = null;
 
 export function acquireWindowsSingleInstance() {
   return new Promise((resolve, reject) => {
-    const scriptPath = process.pkg
-      ? path.join(path.dirname(process.execPath), "singleInstance.ps1")
+    const scriptPath = process.env.SEWA_AGENT_SCRIPTS_DIR
+      ? path.join(process.env.SEWA_AGENT_SCRIPTS_DIR, "singleInstance.ps1")
       : path.resolve(currentDirectory, "../../utils/singleInstance.ps1");
     const username = process.env.USERNAME || os.userInfo().username;
     const safeUsername = username.replace(/[^a-zA-Z0-9_-]/g, "_");

@@ -33,16 +33,10 @@ jobs:
         env:
           PYTHON: ${{ steps.python.outputs.python-path }}
         run: npm ci
-      - name: Build Apple Silicon agent
-        run: npm run build:mac:arm64
-      - name: Install Intel native dependencies
-        env:
-          PYTHON: ${{ steps.python.outputs.python-path }}
-        run: npm ci --os=darwin --cpu=x64
-      - name: Build Intel agent
-        run: npm run build:mac:x64
       - name: Install desktop packages
         working-directory: desktop
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
         run: npm ci
       - name: Import signing certificate
         id: cert
@@ -69,20 +63,25 @@ jobs:
           sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
           echo "CSC_NAME=$signing_identity" >> "$GITHUB_ENV"
           echo "has_identity=true" >> "$GITHUB_OUTPUT"
-      - name: Build universal DMG
+      - name: Build DMGs
         working-directory: desktop
         run: npm run dist:mac
-      - name: Verify universal application
+      - name: Verify applications
         env:
           HAS_SIGNING_CERT: ${{ steps.cert.outputs.has_identity }}
         run: |
-          app="desktop/release/mac-universal/SEWA Monitoring Agent.app"
-          lipo -info "$app/Contents/MacOS/SEWA Monitoring Agent"
-          file "$app/Contents/Resources/agent/macos/arm64/sewa-monitoring-agent"
-          file "$app/Contents/Resources/agent/macos/x64/sewa-monitoring-agent"
-          if [ "$HAS_SIGNING_CERT" = "true" ]; then
-            codesign --verify --deep --strict "$app"
-          fi
+          for pair in "mac:x64" "mac-arm64:arm64"; do
+            app="desktop/release/${pair%%:*}/SEWA Monitoring Agent.app"
+            arch="${pair##*:}"
+            lipo -info "$app/Contents/MacOS/SEWA Monitoring Agent"
+            test -f "$app/Contents/Resources/agent/agent.cjs"
+            lipo -info "$app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/darwin-$arch.node"
+            if [ "$HAS_SIGNING_CERT" = "true" ]; then
+              codesign --verify --deep --strict "$app"
+            fi
+          done
+      - name: Report DMG sizes
+        run: ls -lh desktop/release/*.dmg
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:

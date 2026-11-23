@@ -3,12 +3,9 @@
   "version": "1.0.0",
   "description": "SEWA Monitoring Agent",
   "main": "src/index.js",
-  "bin": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "build:win": "pkg . --targets node24-win-x64 --output dist/sewa-monitoring-agent.exe --fallback-to-source && cp src/utils/singleInstance.ps1 dist/singleInstance.ps1 && cp src/monitor/idleDetection.ps1 dist/idleDetection.ps1 && cp src/windows/credential.ps1 dist/credential.ps1",
-    "build:mac:arm64": "pkg . --targets node24-macos-arm64 --output dist/macos/arm64/sewa-monitoring-agent --fallback-to-source",
-    "build:mac:x64": "pkg . --targets node24-macos-x64 --output dist/macos/x64/sewa-monitoring-agent --fallback-to-source"
+    "build:agent": "node build.js"
   },
   "keywords": [],
   "author": "",
@@ -19,14 +16,6 @@
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.25.0"
-  },
-  "pkg": {
-    "scripts": [
-      "src/**/*.js"
-    ],
-    "assets": [
-      "src/config/**/*"
-    ]
+    "esbuild": "^0.28.2"
   }
 }

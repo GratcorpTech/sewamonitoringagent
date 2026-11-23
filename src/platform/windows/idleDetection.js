@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const powershellScript = process.pkg
-  ? path.join(path.dirname(process.execPath), "idleDetection.ps1")
+const powershellScript = process.env.SEWA_AGENT_SCRIPTS_DIR
+  ? path.join(process.env.SEWA_AGENT_SCRIPTS_DIR, "idleDetection.ps1")
   : path.join(process.cwd(), "src", "monitor", "idleDetection.ps1");
 
 export function startWindowsIdleMonitoring(callback) {

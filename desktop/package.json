@@ -12,12 +12,12 @@
     "preview": "vite preview",
     "electron": "electron .",
     "start": "concurrently \"vite --host 127.0.0.1 --port 5174 --strictPort\" \"wait-on http://127.0.0.1:5174 && electron .\"",
-    "dist": "npm run build && electron-builder --win nsis",
-    "dist:mac": "npm run build && electron-builder --mac dmg --universal"
+    "dist": "npm --prefix .. run build:agent && npm run build && electron-builder --win nsis",
+    "dist:mac": "npm --prefix .. run build:agent && npm run build && electron-builder --mac dmg"
   },
   "dependencies": {
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "active-win": "^8.2.1",
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -31,11 +31,14 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "vite": "^8.3.6",
     "wait-on": "^9.5.1"
   },
   "build": {
     "appId": "com.sewa.monitoringagent",
+    "npmRebuild": false,
     "productName": "SEWA Monitoring Agent",
     "directories": {
       "output": "release"
@@ -43,39 +46,49 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/node-gyp/**",
+      "!node_modules/better-sqlite3/{deps,src,node_modules}/**",
+      "!node_modules/better-sqlite3/binding.gyp",
+      "!node_modules/active-win/{Sources,binding.gyp}",
+      "!node_modules/active-win/Sources/**"
     ],
     "extraResources": [
       {
-        "from": "../dist",
-        "to": "agent",
-        "filter": [
-          "sewa-monitoring-agent.exe",
-          "credential.ps1",
-          "idleDetection.ps1",
-          "singleInstance.ps1",
-          "startAgent.ps1",
-          "macos/**"
-        ]
+        "from": "../dist/agent",
+        "to": "agent"
       }
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**",
+      "node_modules/active-win/**"
     ],
     "win": {
       "target": [
         "nsis"
       ],
-      "artifactName": "SEWA-Monitoring-Agent-Setup-${version}.${ext}"
+      "artifactName": "SEWA-Monitoring-Agent-Setup-${version}.${ext}",
+      "files": [
+        "!node_modules/better-sqlite3/prebuilds/!(win32-${arch}).node",
+        "!node_modules/active-win/lib/binding/!(napi-6-win32-unknown-${arch})/**",
+        "!node_modules/active-win/main"
+      ]
     },
     "mac": {
       "target": [
         {
           "target": "dmg",
           "arch": [
-            "universal"
+            "arm64",
+            "x64"
           ]
         }
       ],
-      "x64ArchFiles": "Contents/Resources/agent/macos/**",
-      "artifactName": "SEWA-Monitoring-Agent-${version}-macOS-universal.${ext}"
+      "artifactName": "SEWA-Monitoring-Agent-${version}-macOS-${arch}.${ext}",
+      "files": [
+        "!node_modules/better-sqlite3/prebuilds/!(darwin-${arch}).node",
+        "!node_modules/active-win/lib/binding/!(napi-6-darwin-unknown-${arch})/**"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -89,6 +102,9 @@
     },
     "electronLanguages": [
       "en-US"
-    ]
+    ],
+    "dmg": {
+      "format": "UDBZ"
+    }
   }
 }

@@ -1,7 +1,10 @@
 
 $ErrorActionPreference = "Stop"
 
-$agentPath = Join-Path $PSScriptRoot "sewa-monitoring-agent.exe"
+# This script is installed in <install dir>\resources\agent.
+$resourcesPath = Split-Path -Parent $PSScriptRoot
+$runtimePath = (Resolve-Path (Join-Path $resourcesPath "..\SEWA Monitoring Agent.exe")).Path
+$agentScript = Join-Path $PSScriptRoot "agent.cjs"
 $logDirectory = Join-Path $env:LOCALAPPDATA "SEWA\MonitoringAgent\logs"
 $logPath = Join-Path $logDirectory "startup.log"
 
@@ -12,21 +15,20 @@ function Write-StartupLog($message) {
 }
 
 try {
-    if (!(Test-Path $agentPath)) {
-        throw "Agent executable not found: $agentPath"
+    if (!(Test-Path $agentScript)) {
+        throw "Agent script not found: $agentScript"
     }
 
-    $existing = Get-Process -Name "sewa-monitoring-agent" -ErrorAction SilentlyContinue
+    # The agent holds a single-instance mutex and exits if one is already running.
+    $env:ELECTRON_RUN_AS_NODE = "1"
+    $env:SEWA_AGENT_SCRIPTS_DIR = $PSScriptRoot
+    $env:NODE_PATH = (Join-Path $resourcesPath "app.asar\node_modules") + ";" + (Join-Path $resourcesPath "app.asar.unpacked\node_modules")
 
-    if ($existing) {
-        Write-StartupLog "Agent already running. PID: $($existing.Id)"
-        exit 0
-    }
-
-    Write-StartupLog "Starting agent: $agentPath"
+    Write-StartupLog "Starting agent: $agentScript"
 
     $process = Start-Process `
-        -FilePath $agentPath `
+        -FilePath $runtimePath `
+        -ArgumentList "`"$agentScript`"" `
         -WorkingDirectory $PSScriptRoot `
         -WindowStyle Hidden `
         -PassThru
@@ -38,7 +40,7 @@ try {
     $process.Refresh()
 
     if ($process.HasExited) {
-        Write-StartupLog "ERROR: Agent exited. Exit code: $($process.ExitCode)"
+        Write-StartupLog "Agent exited. Exit code: $($process.ExitCode) (0 means another instance is already running)"
     }
     else {
         Write-StartupLog "Agent is running successfully. PID: $($process.Id)"

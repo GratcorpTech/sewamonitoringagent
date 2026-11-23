@@ -9,8 +9,8 @@ const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const settingsPath = path.join(getAgentDataDirectory(), "config", "settings.json");
 
 function getCredentialScriptPath() {
-  if (process.pkg) {
-    return path.join(path.dirname(process.execPath), "credential.ps1");
+  if (process.env.SEWA_AGENT_SCRIPTS_DIR) {
+    return path.join(process.env.SEWA_AGENT_SCRIPTS_DIR, "credential.ps1");
   }
 
   return path.resolve(currentDirectory, "../windows/credential.ps1");
