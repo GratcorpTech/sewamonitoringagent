@@ -25,7 +25,7 @@ export const APPLICATION_PROCESS_MAP = {
 
   "vs code": {
     win32: ["Code.exe"],
-    darwin: ["Visual Studio Code"],
+    darwin: ["Code", "Visual Studio Code"],
     linux: ["code"],
   },
 

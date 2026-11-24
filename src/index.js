@@ -22,7 +22,7 @@ import {
   releaseSingleInstance,
 } from "./utils/singleInstance.js";
 
-const IDLE_THRESHOLD = 15000;
+const IDLE_THRESHOLD = 60 * 1000; // 1 minute
 const SYNC_INTERVAL = 10000;
 const CHECKPOINT_INTERVAL = 30000;
 const APPLICATION_REFRESH_INTERVAL = 2 * 60 * 1000;

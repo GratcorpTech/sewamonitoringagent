@@ -25,6 +25,7 @@ export async function sendUsageSession(session, device) {
       body: JSON.stringify({
         session,
         user: device,
+        username: settings.username,
       }),
       signal: AbortSignal.timeout(API_TIMEOUT),
     });
@@ -47,7 +48,6 @@ export async function sendUsageSession(session, device) {
   }
 }
 
-
 export async function fetchApplicationRecords() {
   const settings = getAgentSettings();
 
@@ -67,7 +67,13 @@ export async function fetchApplicationRecords() {
     filters: JSON.stringify([]),
     pagination: "confirm",
     skiplimitcheck: "true",
-    selectedFields: JSON.stringify(["id", "assetname"]),
+    selectedFields: JSON.stringify([
+      "id",
+      "assetname",
+      "windowsprocessnames",
+      "macprocessnames",
+      "linuxprocessnames",
+    ]),
   });
 
   const response = await fetch(
