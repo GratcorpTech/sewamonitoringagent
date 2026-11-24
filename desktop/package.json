@@ -64,6 +64,7 @@
       "node_modules/active-win/**"
     ],
     "win": {
+      "icon": "public/my-favicon.ico",
       "target": [
         "nsis"
       ],
@@ -75,6 +76,7 @@
       ]
     },
     "mac": {
+      "icon": "public/ac1al-x8pba.icns",
       "target": [
         {
           "target": "dmg",

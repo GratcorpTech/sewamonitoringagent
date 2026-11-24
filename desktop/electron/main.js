@@ -167,6 +167,11 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     title: "SEWA Monitoring Agent",
+    icon: path.join(
+      __dirname,
+      app.isPackaged ? "../dist" : "../public",
+      "my-favicon.ico",
+    ),
 
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
