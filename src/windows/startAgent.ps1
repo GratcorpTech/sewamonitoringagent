@@ -20,18 +20,20 @@ try {
     }
 
     # The agent holds a single-instance mutex and exits if one is already running.
-    $env:ELECTRON_RUN_AS_NODE = "1"
-    $env:SEWA_AGENT_SCRIPTS_DIR = $PSScriptRoot
-    $env:NODE_PATH = (Join-Path $resourcesPath "app.asar\node_modules") + ";" + (Join-Path $resourcesPath "app.asar.unpacked\node_modules")
+    # It gets its own hidden console so closing the launching window cannot kill it.
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $runtimePath
+    $startInfo.Arguments = "`"$agentScript`""
+    $startInfo.WorkingDirectory = $PSScriptRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.EnvironmentVariables["ELECTRON_RUN_AS_NODE"] = "1"
+    $startInfo.EnvironmentVariables["SEWA_AGENT_SCRIPTS_DIR"] = $PSScriptRoot
+    $startInfo.EnvironmentVariables["NODE_PATH"] = (Join-Path $resourcesPath "app.asar\node_modules") + ";" + (Join-Path $resourcesPath "app.asar.unpacked\node_modules")
 
     Write-StartupLog "Starting agent: $agentScript"
 
-    $process = Start-Process `
-        -FilePath $runtimePath `
-        -ArgumentList "`"$agentScript`"" `
-        -WorkingDirectory $PSScriptRoot `
-        -WindowStyle Hidden `
-        -PassThru
+    $process = [System.Diagnostics.Process]::Start($startInfo)
 
     Write-StartupLog "Agent process launched. PID: $($process.Id)"
 
